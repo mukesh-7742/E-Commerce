@@ -4,26 +4,25 @@ const userSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-
   },
   email: {
     type: String,
     required: true,
-    unique:true
+    unique: true, // ✅ Enforces email uniqueness
+    lowerCase:true,
   },
   password: {
     type: String,
-    required:true 
+    required: true,
   },
   cartData: {
     type: Object,
-    default: {}
-  }
+    default: {}, // ✅ Stores cart state per user
+  },
 }, {
-  timestamps: true,
-  minimize: false // ✅ include this inside the same options object
+  timestamps: true, // ✅ Adds createdAt and updatedAt
+  minimize: false,  // ✅ Ensures empty objects (like cartData) are saved
 });
-
 const User = mongoose.model('User', userSchema);
 
 export default User;

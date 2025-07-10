@@ -1,110 +1,117 @@
-import validator from "validator";
-import bcrypt from "bcrypt"
+import validator from 'validator';
+import bcrypt from 'bcrypt';
 import userModel from '../models/UserModel.js';
 import jwt from 'jsonwebtoken';
 
-
+// Generate JWT
 const createToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET,{expiresIn:'7d'});
-}
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+};
 
 // Route for user login
 const loginUser = async (req, res) => {
-   const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
 
-    const user = await userModel.findOne({ email });
-
-    if (!user) {
-      return res.json({ success: false, message: "User does not exist" });
+    // ✅ Validate input
+    if (!email || !password) {
+      return res.json({ success: false, message: 'Email and password are required' });
     }
 
+    // ✅ Normalize email
+    email = email.toLowerCase();
+
+    const exists = await userModel.findOne({ email: normalizedEmail });const newUser = new userModel({
+      name,
+      email: normalizedEmail,
+      password: hashedPassword
+    });
+
+    if (!user) {
+      return res.json({ success: false, message: 'User does not exist' });
+    }
+
+    // ✅ Compare password
     const isMatch = await bcrypt.compare(password, user.password);
 
-    if (isMatch) {
-      const token = createToken(user._id);
-      return res.json({ success: true, token });
-    } 
-    else {
+    if (!isMatch) {
       return res.json({ success: false, message: 'Invalid credentials' });
     }
 
+    // ✅ Generate JWT token
+    const token = createToken(user._id);
+
+    return res.json({ success: true, token });
+  } catch (error) {
+    console.error('Login Error:', error.message);
+    return res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+// Route for user register
+const registerUser = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    // Validate fields
+    if (!name || !email || !password) {
+      return res.json({ success: false, message: 'All fields are required' });
+    }
+
+    if (!validator.isEmail(email)) {
+      return res.json({ success: false, message: 'Please enter a valid email' });
+    }
+
+    if (password.length < 8) {
+      return res.json({ success: false, message: 'Please enter a strong password' });
+    }
+
+    // Check if user exists
+    const exists = await userModel.findOne({ email });
+    if (exists) {
+      return res.json({ success: false, message: 'User already exists' });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create new user
+    const newUser = new userModel({
+      name,
+      email,
+      password: hashedPassword,
+    });
+
+    const user = await newUser.save();
+
+    // Generate token
+    const token = createToken(user._id);
+
+    res.json({ success: true, token });
   } catch (error) {
     console.error(error);
-    return res.json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
-}
+};
 
-}
-
-
-//Route for user register
-const registerUser = async (req, res) => {
-    try {
-        const { name, email, password } = req.body;
-
-        // checking user already exists or not
-        const exists = await userModel.findOne({ email });
-        if (exists) {
-            return res.json({ success: false, message: "User already exists" })
-        }
-
-        //validate email format & strong password
-        if (!validator.isEmail(email)) {
-            return res.json({ success: false, message: "Please enter a valid email" })
-
-        }
-        if (password.length < 8) {
-            return res.json({ success: false, message: "Please enter a Strong password" })
-
-        }
-
-        // hashing user password 
-        const salt = await bcrypt.genSalt(10)
-        const hashedPassword = await bcrypt.hash(password, salt)
-
-        const newUser = new userModel({
-            name,
-            email,
-            password: hashedPassword
-        });
-        const user = await newUser.save()
-
-        // generate token(JWT,)
-        const token = createToken(user._id,)
-        //respond with token
-        res.json({ success: true, token })
-
-    } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message })
-
-    }
-}
-
-
-// Route for admin login 
+// Route for admin login
 const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-      const token = jwt.sign(
-        { email },
+      const token = jwt.sign({ email },
         process.env.JWT_SECRET,
-        { expiresIn: '7d' } // ✅ extended token life
-      );
-
+        { expiresIn: '7d' });
       return res.json({ success: true, token });
     } else {
-      return res.json({ success: false, message: "Invalid email or password" });
+      return res.json({ success: false, message: 'Invalid email or password' });
     }
-
   } catch (error) {
-    console.error("Login Error:", error.message);
+    console.error('Login Error:', error.message);
     return res.status(500).json({ success: false, message: error.message });
   }
 };
 
-export { loginUser, registerUser, adminLogin } 
+export { loginUser, registerUser, adminLogin };

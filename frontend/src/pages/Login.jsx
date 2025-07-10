@@ -1,12 +1,12 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 
 const Login = () => {
   const [currentState, setCurrentState] = useState('Sign Up');
   const { token, setToken, navigate, backendUrl } = useContext(ShopContext);
-
 
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -15,18 +15,42 @@ const Login = () => {
   const onSubmitHandler = async (event) => {
     event.preventDefault();
 
-    try {
-      if (currentState .toLowerCase() === 'Sign Up') {
-        const response = await axios.post(backendUrl + 'api/user/register', { name, email, password });
-        console.log(response.data);
-      } else {
+    // Optional: fallback URL in case backendUrl is undefined
+    const baseUrl = backendUrl || 'http://localhost:4000';
 
+    try {
+      let response;
+      if (currentState.toLowerCase() === 'sign up') {
+        response = await axios.post(`${baseUrl}/api/user/register`, {
+          name,
+          email,
+          password,
+        });
+      } else {
+        response = await axios.post(`${baseUrl}/api/user/login`, {
+          email,
+          password,
+        });
+      }
+
+      if (response.data.success) {
+        setToken(response.data.token);
+        localStorage.setItem('token', response.data.token);
+        toast.success(`${currentState} successful!`);
+        navigate('/'); // Or wherever you want to redirect
+      } else {
+        toast.error(response.data.message);
       }
     } catch (error) {
-
+      console.log(error);
+      toast.error(error.message || 'Something went wrong');
     }
-  }
-
+  };
+  useEffect(()=>{
+    if (!token) {
+      navigate('/')
+    }
+  },[])
   return (
     <form
       onSubmit={onSubmitHandler}
@@ -86,4 +110,4 @@ const Login = () => {
   );
 };
 
-export default Login 
+export default Login;
