@@ -9,5 +9,4 @@ const connectDB = async ()=>{
     await mongoose.connect(`${process.env.MONGODB_URI}/e-commerce`)
 
 }
-
 export default connectDB;
