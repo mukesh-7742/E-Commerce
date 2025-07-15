@@ -3,8 +3,8 @@ import Navbar from './Component/Navbar'
 import Sidebar from './Component/Sidebar'
 import { Route, Routes } from 'react-router-dom'
 import Add from './pages/Add'
-import List from './pages/List'
-import Orders from './pages/Orders'
+import List from './pages/list'
+import Orders from './pages/orders'
 import Login from './Component/Login'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
